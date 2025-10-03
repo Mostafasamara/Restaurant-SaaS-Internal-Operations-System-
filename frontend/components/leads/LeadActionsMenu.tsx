@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
 import { Lead } from '@/lib/types/lead';
-import { useUpdateLead, useMarkLeadContacted, useQualifyLead, useDisqualifyLead } from '@/lib/hooks/useLeads';
-import { MoreVertical, Edit, Trash2, Phone, CheckCircle, XCircle, Eye } from 'lucide-react';
+import { useMarkLeadContacted, useQualifyLead, useDisqualifyLead } from '@/lib/hooks/useLeads';
+import { Pencil, Eye, Star, Trash2, CheckCircle2, XCircle, Phone } from 'lucide-react';
 import Link from 'next/link';
+import { useState } from 'react';
 
 interface LeadActionsMenuProps {
   lead: Lead;
@@ -12,120 +12,76 @@ interface LeadActionsMenuProps {
 }
 
 export default function LeadActionsMenu({ lead, onDelete }: LeadActionsMenuProps) {
-  const [isOpen, setIsOpen] = useState(false);
   const markContacted = useMarkLeadContacted();
-  const qualifyLead = useQualifyLead();
+  const qualifyLead   = useQualifyLead();
   const disqualifyLead = useDisqualifyLead();
+  const [busy, setBusy] = useState(false);
 
-  const handleMarkContacted = async () => {
-    try {
-      await markContacted.mutateAsync(lead.id);
-      setIsOpen(false);
-    } catch (error) {
-      alert('Failed to mark as contacted');
-    }
+  const run = async (fn: () => Promise<any>) => {
+    try { setBusy(true); await fn(); } finally { setBusy(false); }
   };
 
-  const handleQualify = async () => {
-    try {
-      await qualifyLead.mutateAsync(lead.id);
-      setIsOpen(false);
-    } catch (error) {
-      alert('Failed to qualify lead');
-    }
-  };
-
-  const handleDisqualify = async () => {
-    try {
-      await disqualifyLead.mutateAsync(lead.id);
-      setIsOpen(false);
-    } catch (error) {
-      alert('Failed to disqualify lead');
-    }
-  };
+  const btn = "p-2 rounded-md hover:bg-gray-100 border border-transparent hover:border-gray-200 transition";
+  const btnDanger = "p-2 rounded-md hover:bg-red-50 border border-red-300 text-red-600 transition";
 
   return (
-    <div className="relative">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="p-2 hover:bg-gray-100 rounded-lg transition"
-      >
-        <MoreVertical size={18} className="text-gray-600" />
+    <div className="flex items-center gap-1 md:gap-2">
+      <Link href={`/dashboard/leads/${lead.id}`} title="View" className={btn} aria-label="View">
+        <Eye size={18} />
+      </Link>
+
+      <Link href={`/dashboard/leads/${lead.id}/edit`} title="Edit" className={btn} aria-label="Edit">
+        <Pencil size={18} />
+      </Link>
+
+      {lead.status === 'new' && (
+        <button
+          disabled={busy}
+          onClick={() => run(() => markContacted.mutateAsync(lead.id))}
+          title="Mark Contacted"
+          aria-label="Contacted"
+          className={btn}
+        >
+          <Phone size={18} />
+        </button>
+      )}
+
+      {(lead.status === 'new' || lead.status === 'contacted') && (
+        <button
+          disabled={busy}
+          onClick={() => run(() => qualifyLead.mutateAsync(lead.id))}
+          title="Qualify"
+          aria-label="Qualify"
+          className={btn}
+        >
+          <CheckCircle2 size={18} />
+        </button>
+      )}
+
+      {lead.status !== 'disqualified' && lead.status !== 'converted' && (
+        <button
+          disabled={busy}
+          onClick={() => run(() => disqualifyLead.mutateAsync(lead.id))}
+          title="Disqualify"
+          aria-label="Disqualify"
+          className={btn}
+        >
+          <XCircle size={18} />
+        </button>
+      )}
+
+      <button onClick={() => alert('TODO: Pin')} title="Pin" aria-label="Pin" className={btn}>
+        <Star size={18} />
       </button>
 
-      {isOpen && (
-        <>
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 z-10"
-            onClick={() => setIsOpen(false)}
-          />
-
-          {/* Menu */}
-          <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
-            <Link
-              href={`/dashboard/leads/${lead.id}`}
-              className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
-            >
-              <Eye size={16} />
-              View Details
-            </Link>
-
-            <Link
-              href={`/dashboard/leads/${lead.id}/edit`}
-              className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
-            >
-              <Edit size={16} />
-              Edit Lead
-            </Link>
-
-            <div className="border-t border-gray-200 my-1" />
-
-            {lead.status === 'new' && (
-              <button
-                onClick={handleMarkContacted}
-                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
-              >
-                <Phone size={16} />
-                Mark as Contacted
-              </button>
-            )}
-
-            {(lead.status === 'new' || lead.status === 'contacted') && (
-              <button
-                onClick={handleQualify}
-                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-green-700 hover:bg-green-50 transition"
-              >
-                <CheckCircle size={16} />
-                Qualify Lead
-              </button>
-            )}
-
-            {lead.status !== 'disqualified' && lead.status !== 'converted' && (
-              <button
-                onClick={handleDisqualify}
-                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-700 hover:bg-red-50 transition"
-              >
-                <XCircle size={16} />
-                Disqualify
-              </button>
-            )}
-
-            <div className="border-t border-gray-200 my-1" />
-
-            <button
-              onClick={() => {
-                setIsOpen(false);
-                onDelete(lead.id);
-              }}
-              className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition"
-            >
-              <Trash2 size={16} />
-              Delete Lead
-            </button>
-          </div>
-        </>
-      )}
+      <button
+        onClick={() => onDelete(lead.id)}
+        title="Delete"
+        aria-label="Delete"
+        className={btnDanger}
+      >
+        <Trash2 size={18} />
+      </button>
     </div>
   );
 }

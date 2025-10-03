@@ -6,8 +6,27 @@ import { useAuthStore } from '@/lib/store/authStore';
 import { LeadFilters, LeadStatus, LeadSource } from '@/lib/types/lead';
 import { Search, Plus, Filter, X } from 'lucide-react';
 import LeadsTable from '@/components/leads/LeadsTable';
-import StatusBadge from '@/components/leads/StatusBadge';
+import FilterSelect, { Option } from '@/components/ui/FilterSelect';
 import Link from 'next/link';
+
+const STATUS_OPTIONS: Option[] = [
+  { value: 'new',          label: 'New' },
+  { value: 'contacted',    label: 'Contacted' },
+  { value: 'qualified',    label: 'Qualified' },
+  { value: 'disqualified', label: 'Disqualified' },
+  { value: 'converted',    label: 'Converted' },
+];
+
+const SOURCE_OPTIONS: Option[] = [
+  { value: 'website',       label: 'Website' },
+  { value: 'facebook',      label: 'Facebook' },
+  { value: 'instagram',     label: 'Instagram' },
+  { value: 'google',        label: 'Google' },
+  { value: 'referral',      label: 'Referral' },
+  { value: 'sales_sourced', label: 'Sales Sourced' },
+  { value: 'chat',          label: 'Chat' },
+  { value: 'other',         label: 'Other' },
+];
 
 export default function LeadsPage() {
   const { user } = useAuthStore();
@@ -54,7 +73,7 @@ export default function LeadsPage() {
     setCurrentPage(1);
   };
 
-  const hasActiveFilters = searchQuery || statusFilter || sourceFilter;
+  const hasActiveFilters = Boolean(searchQuery || statusFilter || sourceFilter);
 
   return (
     <div className="space-y-6">
@@ -119,42 +138,23 @@ export default function LeadsPage() {
             />
           </div>
 
-          {/* Status Filter */}
-          <select
+          {/* Status Filter (Headless Select) */}
+          <FilterSelect
             value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value as LeadStatus | '');
-              setCurrentPage(1);
-            }}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white"
-          >
-            <option value="">All Statuses</option>
-            <option value="new">New</option>
-            <option value="contacted">Contacted</option>
-            <option value="qualified">Qualified</option>
-            <option value="disqualified">Disqualified</option>
-            <option value="converted">Converted</option>
-          </select>
+            onChange={(v) => { setStatusFilter(v as LeadStatus | ''); setCurrentPage(1); }}
+            options={STATUS_OPTIONS}
+            placeholder="All Statuses"
+            widthClass="w-44"
+          />
 
-          {/* Source Filter */}
-          <select
+          {/* Source Filter (Headless Select) */}
+          <FilterSelect
             value={sourceFilter}
-            onChange={(e) => {
-              setSourceFilter(e.target.value as LeadSource | '');
-              setCurrentPage(1);
-            }}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white"
-          >
-            <option value="">All Sources</option>
-            <option value="website">Website</option>
-            <option value="facebook">Facebook</option>
-            <option value="instagram">Instagram</option>
-            <option value="google">Google</option>
-            <option value="referral">Referral</option>
-            <option value="sales_sourced">Sales Sourced</option>
-            <option value="chat">Chat</option>
-            <option value="other">Other</option>
-          </select>
+            onChange={(v) => { setSourceFilter(v as LeadSource | ''); setCurrentPage(1); }}
+            options={SOURCE_OPTIONS}
+            placeholder="All Sources"
+            widthClass="w-44"
+          />
 
           {/* Clear Filters */}
           {hasActiveFilters && (
@@ -181,7 +181,7 @@ export default function LeadsPage() {
               </span>
             )}
             {statusFilter && (
-              <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm">
+              <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm capitalize">
                 Status: {statusFilter}
                 <button onClick={() => setStatusFilter('')} className="hover:text-blue-900">
                   <X size={14} />
@@ -189,7 +189,7 @@ export default function LeadsPage() {
               </span>
             )}
             {sourceFilter && (
-              <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm">
+              <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm capitalize">
                 Source: {sourceFilter}
                 <button onClick={() => setSourceFilter('')} className="hover:text-blue-900">
                   <X size={14} />

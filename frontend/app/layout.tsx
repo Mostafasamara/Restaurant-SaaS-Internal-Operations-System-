@@ -16,11 +16,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
-        <Providers>
-          {children}
-        </Providers>
-      </body>
+    <body className="bg-background text-foreground antialiased">
+      <Providers>{children}</Providers>
+    </body>
+
     </html>
   );
 }

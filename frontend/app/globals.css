@@ -23,4 +23,21 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+
+  @layer base {
+    /* Global baseline */
+    html, body {
+      @apply bg-background text-foreground antialiased;
+    }
+
+    /* Readable body text almost everywhere */
+    p, li, td, th, a, label, input, textarea, button {
+      @apply text-gray-900;
+    }
+
+    /* 🔁 Notice: we REMOVED `span` and `h1, h2, h3, h4` here
+       so components on dark surfaces (like the sidebar) can
+       keep their own colors without being overridden. */
+  }
+
 }
