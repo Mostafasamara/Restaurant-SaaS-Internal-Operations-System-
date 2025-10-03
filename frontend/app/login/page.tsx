@@ -17,11 +17,24 @@ export default function LoginPage() {
     setError('');
     setIsLoading(true);
 
+    console.log('Attempting login with:', { username, password: '***' });
+
     try {
       await login(username, password);
-      router.push('/');
+      console.log('Login successful, redirecting to dashboard...');
+      router.push('/dashboard');
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Invalid credentials');
+      console.error('Login error:', err);
+      console.error('Error response:', err.response?.data);
+
+      // Better error handling
+      const errorMessage =
+        err.response?.data?.error ||
+        err.response?.data?.detail ||
+        err.message ||
+        'Login failed. Please check your credentials.';
+
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -45,8 +58,8 @@ export default function LoginPage() {
           </h1>
 
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-              {error}
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-700 text-sm font-medium">❌ {error}</p>
             </div>
           )}
 
@@ -66,6 +79,7 @@ export default function LoginPage() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                 placeholder="Enter your username"
                 required
+                disabled={isLoading}
               />
             </div>
 
@@ -84,6 +98,7 @@ export default function LoginPage() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                 placeholder="Enter your password"
                 required
+                disabled={isLoading}
               />
             </div>
 

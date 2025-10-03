@@ -30,7 +30,7 @@ const navigation: NavItem[] = [
   },
   {
     name: 'Leads',
-    href: '/leads',
+    href: '/dashboard/leads',
     icon: UserPlus,
     allowedDepartments: ['sales', 'marketing'],
   },

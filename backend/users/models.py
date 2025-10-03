@@ -47,7 +47,7 @@ class User(AbstractUser):
         ordering = ['first_name', 'last_name']
 
     def __str__(self):
-        return f"{self.get_full_name()} ({self.department})"
+        return f"{self.get_username()} ({self.department})"
 
     @property
     def full_name(self):
