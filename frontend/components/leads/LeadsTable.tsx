@@ -2,11 +2,11 @@
 
 import { Lead } from '@/lib/types/lead';
 import StatusBadge from './StatusBadge';
-import LeadActionsMenu from './LeadActionsMenu';
 import { Phone, Mail, MapPin } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useState, useEffect } from 'react';
 import { useUpdateLead } from '@/lib/hooks/useLeads';
+import Link from 'next/link';
 
 type LeadStatus = 'new' | 'contacted' | 'qualified' | 'disqualified' | 'converted';
 type ContactStatus =
@@ -23,24 +23,21 @@ interface LeadsTableProps {
   onDelete: (id: number) => void;
 }
 
-export default function LeadsTable({ leads, onDelete }: LeadsTableProps) {
+export default function LeadsTable({ leads }: LeadsTableProps) {
   const updateLead = useUpdateLead();
 
-  // local cache keyed by lead id
   const [local, setLocal] = useState<
     Record<number, { status: LeadStatus; contact_status: ContactStatus }>
   >({});
 
-  // keep local cache in sync whenever leads prop changes
   useEffect(() => {
-    setLocal((prev) => {
+    setLocal(prev => {
       const next: Record<number, { status: LeadStatus; contact_status: ContactStatus }> = {};
       for (const l of leads) {
         const existing = prev[l.id];
         next[l.id] =
           existing ?? {
             status: (l.status as LeadStatus) ?? 'new',
-            // @ts-ignore if your API doesn't send this yet
             contact_status: ((l as any).contact_status as ContactStatus) ?? 'not_called',
           };
       }
@@ -48,30 +45,26 @@ export default function LeadsTable({ leads, onDelete }: LeadsTableProps) {
     });
   }, [leads]);
 
-  // Safe getter with fallback to server values
   const getRow = (l: Lead) =>
     local[l.id] ?? {
       status: (l.status as LeadStatus) ?? 'new',
-      // @ts-ignore if your API doesn't send this yet
       contact_status: ((l as any).contact_status as ContactStatus) ?? 'not_called',
     };
 
-  // Optimistic setter that creates the row if missing
   const setField = async <
     K extends 'status' | 'contact_status'
   >(id: number, key: K, value: K extends 'status' ? LeadStatus : ContactStatus) => {
     const prev = local[id];
-    // create/overwrite entry optimistically
-    setLocal((s) => ({
+
+    setLocal(s => ({
       ...s,
-      [id]: { ...(s[id] ?? getRow(leads.find((x) => x.id === id) as Lead)), [key]: value as any },
+      [id]: { ...(s[id] ?? getRow(leads.find(x => x.id === id)!)), [key]: value as any },
     }));
+
     try {
-      // adjust to your hook signature if different
       await updateLead.mutateAsync({ id, data: { [key]: value } as any });
     } catch (e) {
-      // rollback
-      setLocal((s) => (prev ? { ...s, [id]: prev } : s));
+      setLocal(s => (prev ? { ...s, [id]: prev } : s));
       alert('Failed to update lead');
     }
   };
@@ -85,43 +78,30 @@ export default function LeadsTable({ leads, onDelete }: LeadsTableProps) {
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Restaurant
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Contact
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Contact Status
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Source
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Score
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Created
-              </th>
-              {/* Sticky actions header */}
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider sticky right-0 bg-gray-50 z-10">
-                Actions
-              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Restaurant</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact Status</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
             </tr>
           </thead>
 
           <tbody className="divide-y divide-gray-200">
             {leads.map((lead) => {
-              const row = getRow(lead); // ✅ correct helper usage
+              const row = getRow(lead);
 
               return (
                 <tr key={lead.id} className="hover:bg-gray-50 transition">
-                  {/* Restaurant */}
+                  {/* Restaurant → link to detail page */}
                   <td className="px-6 py-4">
-                    <div className="font-medium text-gray-900">{lead.restaurant_name}</div>
+                    <Link
+                      href={`/dashboard/leads/${lead.id}`}
+                      className="font-medium text-blue-600 hover:underline"
+                    >
+                      {lead.restaurant_name}
+                    </Link>
                     <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
                       <MapPin size={12} />
                       {lead.location}
@@ -147,7 +127,7 @@ export default function LeadsTable({ leads, onDelete }: LeadsTableProps) {
                     </div>
                   </td>
 
-                  {/* Status (badge + compact select) */}
+                  {/* Status */}
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
                       <StatusBadge status={row.status as LeadStatus} />
@@ -171,7 +151,6 @@ export default function LeadsTable({ leads, onDelete }: LeadsTableProps) {
                       value={row.contact_status}
                       onChange={(e) => setField(lead.id, 'contact_status', e.target.value as ContactStatus)}
                       className={`${selectCls} w-[10.5rem]`}
-                      title="Contact status"
                     >
                       <option value="not_called">Not called</option>
                       <option value="ringing">Ringing</option>
@@ -186,7 +165,7 @@ export default function LeadsTable({ leads, onDelete }: LeadsTableProps) {
                   {/* Source */}
                   <td className="px-6 py-4">
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 capitalize">
-                      {(lead.source ?? '').replace('_', ' ') || '—'}
+                      {lead.source.replace('_', ' ')}
                     </span>
                   </td>
 
@@ -196,31 +175,18 @@ export default function LeadsTable({ leads, onDelete }: LeadsTableProps) {
                       <div className="flex-1 bg-gray-200 rounded-full h-2 max-w-[80px]">
                         <div
                           className={`h-2 rounded-full ${
-                            (lead.score ?? 0) >= 75
-                              ? 'bg-green-500'
-                              : (lead.score ?? 0) >= 50
-                              ? 'bg-yellow-500'
-                              : 'bg-red-500'
+                            lead.score >= 75 ? 'bg-green-500' : lead.score >= 50 ? 'bg-yellow-500' : 'bg-red-500'
                           }`}
-                          style={{
-                            width: `${Math.max(0, Math.min(100, Number(lead.score ?? 0)))}%`,
-                          }}
+                          style={{ width: `${lead.score}%` }}
                         />
                       </div>
-                      <span className="ml-2 text-sm text-gray-600">{lead.score ?? 0}</span>
+                      <span className="ml-2 text-sm text-gray-600">{lead.score}</span>
                     </div>
                   </td>
 
                   {/* Created */}
                   <td className="px-6 py-4 text-sm text-gray-500">
-                    {lead.created_at
-                      ? formatDistanceToNow(new Date(lead.created_at), { addSuffix: true })
-                      : '—'}
-                  </td>
-
-                  {/* Actions — sticky right */}
-                  <td className="px-6 py-4 text-right sticky right-0 bg-white z-10">
-                    <LeadActionsMenu lead={lead} onDelete={onDelete} />
+                    {formatDistanceToNow(new Date(lead.created_at), { addSuffix: true })}
                   </td>
                 </tr>
               );

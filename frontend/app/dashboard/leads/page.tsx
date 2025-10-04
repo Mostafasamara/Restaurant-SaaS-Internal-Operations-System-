@@ -7,6 +7,7 @@ import { LeadFilters, LeadStatus, LeadSource } from '@/lib/types/lead';
 import { Search, Plus, Filter, X } from 'lucide-react';
 import LeadsTable from '@/components/leads/LeadsTable';
 import FilterSelect, { Option } from '@/components/ui/FilterSelect';
+import { LeadFilters, LeadStatus, LeadSource, ContactStatus, Priority } from '@/lib/types/lead';
 import Link from 'next/link';
 
 const STATUS_OPTIONS: Option[] = [
@@ -34,21 +35,24 @@ export default function LeadsPage() {
   const [statusFilter, setStatusFilter] = useState<LeadStatus | ''>('');
   const [sourceFilter, setSourceFilter] = useState<LeadSource | ''>('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [contactStatusFilter, setContactStatusFilter] = useState<ContactStatus | ''>('');  // NEW!
+  const [priorityFilter, setPriorityFilter] = useState<Priority | ''>('');                  // NEW!
 
   // Build filters - IMPORTANT: Only show leads assigned to current user
   const filters: LeadFilters = useMemo(() => {
-    const params: LeadFilters = {
-      page: currentPage,
-      assigned_to: user?.id, // CRITICAL: Filter by current user
-    };
+      const params: LeadFilters = {
+        page: currentPage,
+        assigned_to: user?.id,
+      };
 
-    if (searchQuery) params.search = searchQuery;
-    if (statusFilter) params.status = statusFilter;
-    if (sourceFilter) params.source = sourceFilter;
+      if (searchQuery) params.search = searchQuery;
+      if (statusFilter) params.status = statusFilter;
+      if (sourceFilter) params.source = sourceFilter;
+      if (contactStatusFilter) params.contact_status = contactStatusFilter;  // NEW!
+      if (priorityFilter) params.priority = priorityFilter;                  // NEW!
 
-    return params;
-  }, [searchQuery, statusFilter, sourceFilter, currentPage, user?.id]);
-
+      return params;
+    }, [searchQuery, statusFilter, sourceFilter, contactStatusFilter, priorityFilter, currentPage, user?.id]);
   // Fetch leads with filters
   const { data, isLoading, error, refetch } = useLeads(filters);
   const deleteLead = useDeleteLead();
@@ -67,13 +71,15 @@ export default function LeadsPage() {
 
   // Clear all filters
   const clearFilters = () => {
-    setSearchQuery('');
-    setStatusFilter('');
-    setSourceFilter('');
-    setCurrentPage(1);
-  };
+      setSearchQuery('');
+      setStatusFilter('');
+      setSourceFilter('');
+      setContactStatusFilter('');  // NEW!
+      setPriorityFilter('');       // NEW!
+      setCurrentPage(1);
+    };
 
-  const hasActiveFilters = Boolean(searchQuery || statusFilter || sourceFilter);
+    const hasActiveFilters = searchQuery || statusFilter || sourceFilter || contactStatusFilter || priorityFilter;
 
   return (
     <div className="space-y-6">
@@ -155,7 +161,38 @@ export default function LeadsPage() {
             placeholder="All Sources"
             widthClass="w-44"
           />
+          {/* Contact Status Filter - NEW! */}
+                    <select
+                      value={contactStatusFilter}
+                      onChange={(e) => {
+                        setContactStatusFilter(e.target.value as ContactStatus | '');
+                        setCurrentPage(1);
+                      }}
+                      className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white"
+                    >
+                      <option value="">All Contact Status</option>
+                      <option value="not_called">Not Called</option>
+                      <option value="called">Called</option>
+                      <option value="left_message">Left Message</option>
+                      <option value="no_answer">No Answer</option>
+                      <option value="meeting_scheduled">Meeting Scheduled</option>
+                    </select>
 
+                    {/* Priority Filter - NEW! */}
+                    <select
+                      value={priorityFilter}
+                      onChange={(e) => {
+                        setPriorityFilter(e.target.value as Priority | '');
+                        setCurrentPage(1);
+                      }}
+                      className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white"
+                    >
+                      <option value="">All Priorities</option>
+                      <option value="low">🟢 Low</option>
+                      <option value="medium">🟡 Medium</option>
+                      <option value="high">🟠 High</option>
+                      <option value="urgent">🔴 Urgent</option>
+                    </select>
           {/* Clear Filters */}
           {hasActiveFilters && (
             <button
@@ -198,6 +235,22 @@ export default function LeadsPage() {
             )}
           </div>
         )}
+        {contactStatusFilter && (
+              <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm">
+                Contact: {contactStatusFilter}
+                <button onClick={() => setContactStatusFilter('')} className="hover:text-blue-900">
+                  <X size={14} />
+                </button>
+              </span>
+            )}
+            {priorityFilter && (
+              <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm">
+                Priority: {priorityFilter}
+                <button onClick={() => setPriorityFilter('')} className="hover:text-blue-900">
+                  <X size={14} />
+                </button>
+              </span>
+            )}
       </div>
 
       {/* Loading State */}

@@ -26,6 +26,18 @@ class Lead(models.Model):
         CHAT = 'chat', 'Support Chat'
         OTHER = 'other', 'Other'
 
+    class ContactStatus(models.TextChoices):
+        NOT_CALLED = 'not_called', 'Not Called'
+        CALLED = 'called', 'Called'
+        LEFT_MESSAGE = 'left_message', 'Left Message'
+        NO_ANSWER = 'no_answer', 'No Answer'
+        MEETING_SCHEDULED = 'meeting_scheduled', 'Meeting Scheduled'
+
+    class Priority(models.TextChoices):
+        LOW = 'low', 'Low Priority'
+        MEDIUM = 'medium', 'Medium Priority'
+        HIGH = 'high', 'High Priority'
+        URGENT = 'urgent', 'Urgent'
     # Basic Info
     restaurant_name = models.CharField(max_length=255)
     contact_name = models.CharField(max_length=255)
@@ -82,6 +94,46 @@ class Lead(models.Model):
         related_name='converted_from_lead'
     )
     converted_at = models.DateTimeField(null=True, blank=True)
+
+    # Contact tracking
+    contact_status = models.CharField(
+        max_length=20,
+        choices=ContactStatus.choices,
+        default=ContactStatus.NOT_CALLED,
+        help_text="Current contact status"
+    )
+
+    last_contacted_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Last time this lead was contacted"
+    )
+
+    # Lead qualification
+    priority = models.CharField(
+        max_length=20,
+        choices=Priority.choices,
+        default=Priority.MEDIUM,
+        help_text="Lead priority level"
+    )
+
+    industry = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Restaurant industry/category (e.g., Italian, Fast Food, Fine Dining)"
+    )
+
+    number_of_locations = models.IntegerField(
+        default=1,
+        validators=[MinValueValidator(1)],
+        help_text="Number of restaurant locations"
+    )
+
+    budget_range = models.CharField(
+        max_length=50,
+        blank=True,
+        help_text="Estimated monthly budget (e.g., $500-$1000)"
+    )
 
     # Notes
     notes = models.TextField(blank=True)
