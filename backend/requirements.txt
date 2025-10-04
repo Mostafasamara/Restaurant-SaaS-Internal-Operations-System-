@@ -1,19 +1,23 @@
 Django==4.2.7
 djangorestframework==3.14.0
-djangorestframework-simplejwt==5.3.1  # Add this
+djangorestframework-simplejwt==5.3.1
 psycopg2-binary==2.9.9
 django-cors-headers==4.3.1
 python-decouple==3.8
-gunicorn==21.2.0
-celery==5.3.4
-redis==5.0.1
-stripe==7.4.0
-django-admin-interface==0.26.0
-django-colorfield==0.11.0
-django-import-export==3.3.1
-django-admin-rangefilter==0.11.0
-pillow==10.1.0
 
+# Admin
+django-import-export==3.3.8
+django-admin-rangefilter==0.12.0
+django-simple-history==3.5.0
 
+# PDFs (optional; needs OS libs)
+reportlab==4.2.2
+weasyprint==61.2
 
-tablib[xls,xlsx]==3.5.0       # optional but enables Excel/CSV
+# Tasks
+celery==5.3.6
+redis==5.0.7
+
+# Utils
+Pillow==10.4.0
+tablib[xls,xlsx]==3.5.0

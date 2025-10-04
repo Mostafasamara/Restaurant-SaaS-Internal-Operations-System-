@@ -4,7 +4,10 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
 from django.db.models import Q, Count, Sum
-from .models import Lead, Customer, Deal, DealActivity
+from .models import Deal, DealActivity
+from core.models import Customer
+from marketing.models import Lead
+
 from .serializers import (
     LeadSerializer,
     CustomerSerializer,

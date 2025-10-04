@@ -1,7 +1,8 @@
 from rest_framework import serializers
-from .models import Lead, Customer, Deal, DealActivity
+from .models import Deal, DealActivity
 from users.models import User
-
+from marketing.models import Lead
+from core.models import Customer
 
 class UserSerializer(serializers.ModelSerializer):
     """Simple user serializer for nested data"""

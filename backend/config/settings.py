@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     "import_export",
+    'simple_history',  # <--- ADD THIS LINE!
     "rangefilter",
     # Local apps
     'core',
@@ -46,6 +47,8 @@ INSTALLED_APPS = [
     'sales',
     'operations',
     'customer_success',
+    'billing',
+    'marketing',
 ]
 
 
@@ -65,6 +68,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'simple_history.middleware.HistoryRequestMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -179,3 +183,21 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
+
+
+# ============================================================================
+# PHASE 1: BILLING CONFIGURATION
+# ============================================================================
+
+# Moyasar Payment Gateway (will configure later)
+MOYASAR_API_KEY = config('MOYASAR_API_KEY', default='')
+MOYASAR_PUBLISHABLE_KEY = config('MOYASAR_PUBLISHABLE_KEY', default='')
+MOYASAR_WEBHOOK_SECRET = config('MOYASAR_WEBHOOK_SECRET', default='')
+
+# Invoice Settings
+INVOICE_PREFIX = 'INV'
+INVOICE_DUE_DAYS = 10  # Default payment terms
+
+# Currency
+DEFAULT_CURRENCY = 'SAR'  # Saudi Riyal
+DEFAULT_TAX_RATE = 15.00  # 15% VAT in Saudi Arabia
