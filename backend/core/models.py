@@ -8,7 +8,7 @@ from django.db import models
 from django.conf import settings
 from django.core.validators import MinValueValidator
 from simple_history.models import HistoricalRecords
-
+from .managers import CustomerManager
 
 class Customer(models.Model):
     """
@@ -145,6 +145,9 @@ class Customer(models.Model):
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    # ADD THIS LINE - Custom Manager
+    objects = CustomerManager()  # ← ADD THIS
 
     # History
     history = HistoricalRecords()
