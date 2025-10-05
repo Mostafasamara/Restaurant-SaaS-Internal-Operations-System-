@@ -28,6 +28,19 @@ class Customer(models.Model):
         AT_RISK = 'at_risk', 'At Risk'
         CHURNED = 'churned', 'Churned'
 
+    class ChurnReason(models.TextChoices):
+        PRICE = 'price', 'Price Too High'
+        COMPETITOR = 'competitor', 'Switched to Competitor'
+        NOT_USING = 'not_using', 'Not Using the Service'
+        BAD_EXPERIENCE = 'bad_experience', 'Poor Customer Experience'
+        BUSINESS_CLOSED = 'business_closed', 'Business Closed/Bankrupt'
+        TECHNICAL_ISSUES = 'technical_issues', 'Technical Problems'
+        MISSING_FEATURES = 'missing_features', 'Missing Required Features'
+        NO_SUPPORT = 'no_support', 'Poor Support Quality'
+        SEASONAL = 'seasonal', 'Seasonal Business (Temporary)'
+        CONTRACT_END = 'contract_end', 'Contract Ended (No Renewal)'
+        OTHER = 'other', 'Other Reason'
+
     # Basic Info
     restaurant_name = models.CharField(max_length=255)
     contact_name = models.CharField(max_length=255)
@@ -57,29 +70,77 @@ class Customer(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
+        blank=True,
         related_name='sales_customers'
     )
     cs_rep = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
+        blank=True,
         related_name='cs_customers'
     )
+    ops_rep = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='ops_customers',
+        help_text="Operations engineer responsible for technical deployment"
+    )
 
-    # Lead Source (cross-app reference using string)
+    # Lead Source
     source_lead = models.ForeignKey(
-        'marketing.Lead',  # String reference to avoid circular import
+        'marketing.Lead',
         on_delete=models.SET_NULL,
         null=True,
         blank=True
     )
 
-    # Legacy Stripe (kept for backward compatibility)
+    # Activity Tracking
+    last_activity_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Last time any team member interacted with this customer"
+    )
+    last_activity_type = models.CharField(
+        max_length=50,
+        blank=True,
+        help_text="Type of last activity (call, email, meeting, etc.)"
+    )
+    last_activity_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='+'
+    )
+
+    # Legacy Stripe
     stripe_customer_id = models.CharField(max_length=255, blank=True)
 
     # Lifecycle
     activated_at = models.DateTimeField(null=True, blank=True)
     churned_at = models.DateTimeField(null=True, blank=True)
+
+    # Churn Tracking (NEW - Structured)
+    churn_reason = models.CharField(
+        max_length=30,
+        choices=ChurnReason.choices,
+        blank=True,
+        help_text="Primary reason for churn"
+    )
+    churn_reason_detail = models.TextField(
+        blank=True,
+        help_text="Additional details about churn (optional)"
+    )
+
+    # Flexible custom fields
+    custom_fields = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Flexible storage for custom data without schema changes"
+    )
 
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
@@ -93,13 +154,14 @@ class Customer(models.Model):
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['phone']),
+            models.Index(fields=['email']),
             models.Index(fields=['status']),
             models.Index(fields=['health_score']),
+            models.Index(fields=['churn_reason']),  # NEW - for churn analytics
         ]
 
     def __str__(self):
         return self.restaurant_name
-
 
 class Contact(models.Model):
     """
