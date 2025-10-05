@@ -166,6 +166,126 @@ class Customer(models.Model):
     def __str__(self):
         return self.restaurant_name
 
+    @property
+    def active_branches_count(self):
+        """
+        Count of currently billable branches across all restaurants.
+
+        WHY: Used in dashboards, reports, and billing calculations.
+        USAGE: customer.active_branches_count
+        """
+        from django.utils import timezone
+        today = timezone.now().date()
+
+        count = 0
+        for restaurant in self.restaurants.all():
+            count += restaurant.branches.filter(
+                subscription_start_date__lte=today
+            ).filter(
+                models.Q(subscription_end_date__isnull=True) |
+                models.Q(subscription_end_date__gt=today)
+            ).count()
+
+        return count
+
+    @property
+    def total_mrr(self):
+        """
+        Total Monthly Recurring Revenue from all restaurant subscriptions.
+
+        WHY: Quick way to see customer value.
+        USAGE: customer.total_mrr
+        """
+        from decimal import Decimal
+        total = Decimal('0.00')
+
+        for restaurant in self.restaurants.all():
+            if hasattr(restaurant, 'subscription'):
+                total += restaurant.subscription.mrr
+
+        return total
+
+    def mark_as_active(self):
+        """
+        Mark customer as active and set activation date.
+
+        WHY: Business logic method - ensures consistency.
+        USAGE: customer.mark_as_active()
+        """
+        from django.utils import timezone
+
+        if self.status != self.Status.ACTIVE:
+            self.status = self.Status.ACTIVE
+            if not self.activated_at:
+                self.activated_at = timezone.now()
+            self.save()
+
+    def mark_at_risk(self, reason=None):
+        """
+        Mark customer as at-risk.
+
+        WHY: Workflow method - can trigger alerts/notifications.
+        USAGE: customer.mark_at_risk("No response in 2 weeks")
+        """
+        from django.utils import timezone
+
+        self.status = self.Status.AT_RISK
+        if reason:
+            # Store reason in custom_fields
+            if not self.custom_fields:
+                self.custom_fields = {}
+            self.custom_fields['at_risk_reason'] = reason
+            self.custom_fields['at_risk_date'] = timezone.now().isoformat()
+        self.save()
+
+        # TODO: In signals.py, we'll trigger alert to CS rep
+
+    def mark_churned(self, reason, reason_detail=''):
+        """
+        Mark customer as churned with reason.
+
+        WHY: Ensures churn is tracked properly with reason.
+        USAGE: customer.mark_churned('price', 'Found cheaper alternative')
+        """
+        from django.utils import timezone
+
+        self.status = self.Status.CHURNED
+        self.churned_at = timezone.now()
+        self.churn_reason = reason
+        if reason_detail:
+            self.churn_reason_detail = reason_detail
+        self.save()
+
+        # TODO: In signals.py, we'll trigger offboarding workflow
+
+    def log_activity(self, activity_type, user):
+        """
+        Update last activity tracking.
+
+        WHY: Centralized method to track all customer interactions.
+        USAGE: customer.log_activity('call', request.user)
+        """
+        from django.utils import timezone
+
+        self.last_activity_at = timezone.now()
+        self.last_activity_type = activity_type
+        self.last_activity_by = user
+        self.save(update_fields=['last_activity_at', 'last_activity_type', 'last_activity_by', 'updated_at'])
+
+    def days_since_last_activity(self):
+        """
+        Calculate days since last activity.
+
+        WHY: Used for alerts and health score calculations.
+        USAGE: if customer.days_since_last_activity() > 14: send_alert()
+        """
+        from django.utils import timezone
+
+        if not self.last_activity_at:
+            # If never contacted, count from creation
+            return (timezone.now() - self.created_at).days
+        return (timezone.now() - self.last_activity_at).days
+
 class Contact(models.Model):
     """
     Multiple contacts per customer (billing, technical, management).
